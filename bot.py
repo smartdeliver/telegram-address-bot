@@ -47,17 +47,12 @@ async def get_notes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data["notes"] = update.message.text
 
     summary = (
-        f"שם: {context.user_data.get('name')}
-"
-        f"כתובת: {context.user_data.get('address')}
-"
-        f"קומה: {context.user_data.get('floor')}
-"
-        f"דירה: {context.user_data.get('apartment')}
-"
-        f"קוד בניין: {context.user_data.get('code')}
-"
-        f"הערות: {context.user_data.get('notes')}"
+        "שם: " + context.user_data.get("name", "") + "\n" +
+        "כתובת: " + context.user_data.get("address", "") + "\n" +
+        "קומה: " + context.user_data.get("floor", "") + "\n" +
+        "דירה: " + context.user_data.get("apartment", "") + "\n" +
+        "קוד בניין: " + context.user_data.get("code", "") + "\n" +
+        "הערות: " + context.user_data.get("notes", "")
     )
 
     await update.message.reply_text("הנתונים התקבלו:
