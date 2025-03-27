@@ -12,8 +12,6 @@ logging.basicConfig(
 # שלבים בתהליך הכנסת הנתונים
 NAME, ADDRESS, FLOOR, APARTMENT, CODE, NOTES = range(6)
 
-user_data_store = {}
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text("מה השם?")
     return NAME
@@ -55,9 +53,7 @@ async def get_notes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         "הערות: " + context.user_data.get("notes", "")
     )
 
-    await update.message.reply_text("הנתונים התקבלו:
-
-" + summary)
+    await update.message.reply_text("הנתונים התקבלו:\n\n" + summary)
     return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
