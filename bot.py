@@ -3,12 +3,8 @@ import csv
 import os
 from telegram import Update
 from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    MessageHandler,
-    filters,
-    ContextTypes,
-    ConversationHandler
+    ApplicationBuilder, CommandHandler, MessageHandler,
+    ContextTypes, filters, ConversationHandler
 )
 
 BOT_TOKEN = "8043230540:AAE4artNipeMm8ZZ3QTcn0bdtZieHRsHfX0"
@@ -18,8 +14,8 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-# שלבים בתהליך הכנסת הנתונים
 NAME, ADDRESS, FLOOR, APARTMENT, CODE, NOTES = range(6)
+user_data_store = {}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text("מה השם?")
@@ -53,65 +49,62 @@ async def get_code(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def get_notes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data["הערות"] = update.message.text
 
-    # שמירת הנתונים לקובץ
-    file_exists = os.path.isfile("data.csv")
-    with open("data.csv", mode="a", newline='', encoding="utf-8") as file:
-        writer = csv.writer(file)
-        if not file_exists:
+    if not os.path.isfile("data.csv"):
+        with open("data.csv", "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
             writer.writerow(["שם", "כתובת", "קומה", "דירה", "קוד", "הערות"])
+
+    with open("data.csv", "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
         writer.writerow([
-            context.user_data["שם"],
-            context.user_data["כתובת"],
-            context.user_data["קומה"],
-            context.user_data["דירה"],
-            context.user_data["קוד"],
-            context.user_data["הערות"]
+            context.user_data.get("שם"),
+            context.user_data.get("כתובת"),
+            context.user_data.get("קומה"),
+            context.user_data.get("דירה"),
+            context.user_data.get("קוד"),
+            context.user_data.get("הערות")
         ])
 
     summary = (
-        f"שם: {context.user_data['שם']}\n"
-        f"כתובת: {context.user_data['כתובת']}\n"
-        f"קומה: {context.user_data['קומה']}\n"
-        f"דירה: {context.user_data['דירה']}\n"
-        f"קוד בניין: {context.user_data['קוד']}\n"
-        f"הערות: {context.user_data['הערות']}"
+        f"שם: {context.user_data.get('שם')}\n"
+        f"כתובת: {context.user_data.get('כתובת')}\n"
+        f"קומה: {context.user_data.get('קומה')}\n"
+        f"דירה: {context.user_data.get('דירה')}\n"
+        f"קוד בניין: {context.user_data.get('קוד')}\n"
+        f"הערות: {context.user_data.get('הערות')}"
     )
-    await update.message.reply_text(f"הנתונים התקבלו ונשמרו:\n\n{summary}")
+
+    await update.message.reply_text("הנתונים התקבלו ונשמרו:\n\n" + summary)
     return ConversationHandler.END
 
-# פונקציית חיפוש
-async def search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if len(context.args) == 0:
-        await update.message.reply_text("כתוב את הפקודה כך: /search [שם]")
-        return
-
-    name_to_search = " ".join(context.args)
+async def search(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    name_query = update.message.text.strip()
 
     if not os.path.isfile("data.csv"):
-        await update.message.reply_text("אין נתונים בקובץ.")
+        await update.message.reply_text("לא נמצאו נתונים.")
         return
 
     found = False
-    with open("data.csv", mode="r", encoding="utf-8") as file:
-        reader = csv.DictReader(file)
+    with open("data.csv", "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
         for row in reader:
-            if row["שם"] == name_to_search:
-                summary = (
+            if row["שם"] == name_query:
+                result = (
                     f"שם: {row['שם']}\n"
                     f"כתובת: {row['כתובת']}\n"
                     f"קומה: {row['קומה']}\n"
                     f"דירה: {row['דירה']}\n"
-                    f"קוד: {row['קוד']}\n"
+                    f"קוד בניין: {row['קוד']}\n"
                     f"הערות: {row['הערות']}"
                 )
-                await update.message.reply_text(summary)
+                await update.message.reply_text(result)
                 found = True
                 break
 
     if not found:
-        await update.message.reply_text("השם לא נמצא.")
+        await update.message.reply_text("לא נמצאו פרטים עבור השם הזה.")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     conv_handler = ConversationHandler(
@@ -128,6 +121,6 @@ if __name__ == '__main__':
     )
 
     app.add_handler(conv_handler)
-    app.add_handler(CommandHandler("search", search))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, search))
 
     app.run_polling()
