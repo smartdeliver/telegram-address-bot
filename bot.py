@@ -1,4 +1,6 @@
 import logging
+import csv
+import os
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 
@@ -44,6 +46,21 @@ async def get_code(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def get_notes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data["notes"] = update.message.text
 
+    # שמירת הנתונים לקובץ
+    file_exists = os.path.isfile("data.csv")
+    with open("data.csv", mode="a", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        if not file_exists:
+            writer.writerow(["שם", "כתובת", "קומה", "דירה", "קוד", "הערות"])
+        writer.writerow([
+            context.user_data.get("name", ""),
+            context.user_data.get("address", ""),
+            context.user_data.get("floor", ""),
+            context.user_data.get("apartment", ""),
+            context.user_data.get("code", ""),
+            context.user_data.get("notes", "")
+        ])
+
     summary = (
         "שם: " + context.user_data.get("name", "") + "\n" +
         "כתובת: " + context.user_data.get("address", "") + "\n" +
@@ -53,7 +70,7 @@ async def get_notes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         "הערות: " + context.user_data.get("notes", "")
     )
 
-    await update.message.reply_text("הנתונים התקבלו:\n\n" + summary)
+    await update.message.reply_text("הנתונים התקבלו ונשמרו:\n\n" + summary)
     return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
